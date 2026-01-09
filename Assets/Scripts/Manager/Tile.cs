@@ -24,6 +24,7 @@ public class Tile : MonoBehaviour, IPointerClickHandler
         if (tileImage == null) tileImage = GetComponent<Image>();
         originalScale = transform.localScale;
         originalRotation = transform.rotation;
+        HideAllDots();
         ResetTile();
     }
 
@@ -34,11 +35,22 @@ public class Tile : MonoBehaviour, IPointerClickHandler
         transform.localScale = originalScale;
         transform.rotation = originalRotation;
         gameObject.SetActive(true);
-        SetupDots();
+        HideAllDots();
+    }
+
+    void HideAllDots()
+    {
+        // Hide ALL dots until Dots rule activates
+        for (int i = 0; i < dotImages.Length; i++)
+        {
+            if (dotImages[i] != null)
+                dotImages[i].gameObject.SetActive(false);
+        }
     }
     
     public void SetupDots()
     {
+        HideAllDots();
         for (int i = 0; i < dotImages.Length; i++)
         {
             if (dotImages[i] != null)

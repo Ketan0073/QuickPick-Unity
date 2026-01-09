@@ -2,6 +2,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
+using System;
+using UnityEditor.SpeedTree.Importer;
+using System.Security.Cryptography;
 
 public class GameManager : MonoBehaviour
 
@@ -18,6 +21,11 @@ public class GameManager : MonoBehaviour
     public int roundsPlayed = 0;
     public int correctClicks = 0;
     public bool gameActive = true;
+
+    [Header("Adaptive Difficulty")]
+    public float difficulty = 1f;  // 1.0 = normal, 2.0 = hard
+    private int consecutiveCorrect = 0;
+    private int consecutiveWrong = 0;
 
 
     private Tile[] allTiles; //Track all 9 Tiles
@@ -38,14 +46,30 @@ public class GameManager : MonoBehaviour
     void Update()
     {
         if (!gameActive) return;
-
-        // YOUR TIMEOUT: 5s → Next round (0 points)
-        if (Time.time - roundStartTime >= 5f)
+    
+        // FASTER FADE: 5s → 3s based on difficulty
+        float fadeTime = 3f - ((difficulty - 1f) * 2f);  // 5s → 3s
+        fadeTime = Mathf.Max(2f, fadeTime);  // Minimum 2s
+    
+        if (Time.time - roundStartTime >= fadeTime)
         {
             roundsPlayed++;
             CreateNewRound();
         }
     }
+
+    void UpdateDifficulty()
+{
+    consecutiveCorrect++;
+    consecutiveWrong = 0;
+    
+    // 5+ correct → Harder
+    if (consecutiveCorrect >= 5 && difficulty < 2f)
+    {
+        difficulty = Mathf.Min(2f, difficulty + 0.2f);
+        Debug.Log($"⬆️ HARDER! Diff: {difficulty:F1} (Fade: {5f-((difficulty-1f)*2f):F1}s)");
+    }
+}
 
     public void OnTileClicked(Tile clickedTile)
     {
@@ -65,10 +89,20 @@ public class GameManager : MonoBehaviour
             correctClicks++;
             
             UpdateUI();
+            UpdateDifficulty();
             CreateNewRound();  // IMMEDIATE next
         }
         else
         {
+
+            consecutiveWrong++;
+            consecutiveCorrect = 0;
+            if (consecutiveWrong >= 1 && difficulty > 1f)
+            {
+                difficulty = Mathf.Max(1f, difficulty - 0.5f);
+                Debug.Log($"⬇️ EASIER! Diff: {difficulty:F1}");
+            }
+
             // YOUR WRONG CLICK: -1 life → Next round
             lives--;
             UpdateUI();
@@ -116,9 +150,9 @@ public class GameManager : MonoBehaviour
     roundStartTime = Time.time;
     roundsPlayed++;
     
-    // FORCE test each rule (remove Random for testing)
-    RuleType rule = (RuleType)(roundsPlayed % 4);  // Cycle: 0,1,2,3,0,1...
-    int oddIndex = Random.Range(0, allTiles.Length);
+    
+    RuleType rule = (RuleType)(roundsPlayed % 4);  
+    int oddIndex = UnityEngine.Random.Range(0, allTiles.Length);
     
     Debug.Log($"Round {roundsPlayed}: Rule = {(RuleType)rule}");  // SEE RULES
     
@@ -136,6 +170,7 @@ public class GameManager : MonoBehaviour
     void ApplyRule(Tile tile, RuleType rule, bool isOdd)
     {
         tile.isOddTile = isOdd;
+        float diff = difficulty;
         
         switch (rule)
         {
@@ -144,13 +179,15 @@ public class GameManager : MonoBehaviour
                 break;
                 
             case RuleType.Pattern:
-                tile.transform.localScale = Vector3.one * (isOdd ? 1.2f : 0.9f);
-                tile.transform.rotation = Quaternion.Euler(0, 0, isOdd ? 45f : 0f);
+                float rotationAmount = Mathf.Lerp(20f, 10f, (diff - 1f));
+                tile.transform.rotation = Quaternion.Euler(0, 0, isOdd ? rotationAmount : 0f);
+                tile.transform.localScale = Vector3.one * (isOdd ? 0.9f : 0.9f);
                 tile.tileImage.color = Color.cyan;
                 break;
                 
             case RuleType.Size:
-                tile.transform.localScale = Vector3.one * (isOdd ? 1.4f : 1f);
+                float sizeOdd = Mathf.Lerp(085f, 0.9f, (diff -1f));
+                tile.transform.localScale = Vector3.one * (isOdd ? sizeOdd : 1f);
                 tile.tileImage.color = Color.yellow;
                 break;
                 
@@ -164,9 +201,9 @@ public class GameManager : MonoBehaviour
     
     int GetScoreForReactionTime(float time)
     {
-        if (time <= 2.0f) return 3;      // 🟢 Fast
-        else if (time <= 3.5f) return 2; // 🟡 Medium
-        else if (time <= 5.0f) return 1; // 🔴 Slow
+        if (time <= 0.5f) return 3;      // 🟢 Fast
+        else if (time <= 2.0f) return 2; // 🟡 Medium
+        else if (time <= 3.0f) return 1; // 🔴 Slow
         return 0;
     }
     
