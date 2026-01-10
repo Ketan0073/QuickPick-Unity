@@ -14,6 +14,8 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI livesText;
     public Button stopButton;
 
+    public AudioManager audioManager;
+
     
     [Header("Game State")]
     public int lives = 3;
@@ -90,7 +92,9 @@ public class GameManager : MonoBehaviour
         if (!gameActive) return;
         
         float reactionTime = Time.time - roundStartTime;
-        
+
+        AudioManager.PlaySound(clickedTile.isOddTile ? AudioManager.instance.correctSound : AudioManager.instance.wrongSound);
+
         // Hide ALL other tiles immediately
         foreach (Tile tile in allTiles)
             if (tile != clickedTile) tile.gameObject.SetActive(false);
@@ -123,6 +127,8 @@ public class GameManager : MonoBehaviour
             
             if (lives <= 0)
             {
+
+                AudioManager.PlaySound(AudioManager.instance.gameOverSound);
                 gameActive = false;
                 // SHOW RESULT UI WITH SCORES
                 UIManager ui = FindAnyObjectByType<UIManager>();

@@ -1,10 +1,9 @@
 using UnityEngine;
 
 public class AudioManager : MonoBehaviour
-
 {
     [Header("Audio Clips")]
-    public AudioClip clickSound;
+    
     public AudioClip correctSound;
     public AudioClip wrongSound;
     public AudioClip gameOverSound;
@@ -13,7 +12,8 @@ public class AudioManager : MonoBehaviour
     public AudioSource sfxSource;
     public AudioSource musicSource;
     
-    static AudioManager instance;
+    // FIXED: Make instance PUBLIC
+    public static AudioManager instance;
     
     void Awake()
     {
@@ -34,4 +34,3 @@ public class AudioManager : MonoBehaviour
             instance.sfxSource.PlayOneShot(clip);
     }
 }
-
