@@ -9,7 +9,7 @@ public class Tile : MonoBehaviour, IPointerClickHandler
 {
     [Header("Visual Components")]
     public Image tileImage;
-    public Image[] dotImages = new Image[4];
+    public Image[] dotImages = new Image[3];
 
     [Header("Tile Slate")]
     public bool isOddTile = false;  // NEW: Track odd status

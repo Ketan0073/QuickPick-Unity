@@ -30,6 +30,20 @@ public class GameManager : MonoBehaviour
 
     private Tile[] allTiles; //Track all 9 Tiles
     private float roundStartTime;
+
+    public void ResetGame()
+    {
+        lives = 3;
+        score = 0;
+        roundsPlayed = 0;
+        correctClicks = 0;
+        difficulty = 1f;
+        consecutiveCorrect = 0;
+        consecutiveWrong = 0;
+        gameActive = true;
+        UpdateUI();
+        CreateNewRound();
+    }
     
     void Start()
     {
@@ -47,8 +61,8 @@ public class GameManager : MonoBehaviour
     {
         if (!gameActive) return;
     
-        // FASTER FADE: 5s → 3s based on difficulty
-        float fadeTime = 3f - ((difficulty - 1f) * 2f);  // 5s → 3s
+        // FASTER FADE: 3s → 2s based on difficulty
+        float fadeTime = 3f - ((difficulty - 1f) * 2f);  // 3s → 2s
         fadeTime = Mathf.Max(2f, fadeTime);  // Minimum 2s
     
         if (Time.time - roundStartTime >= fadeTime)
@@ -110,7 +124,17 @@ public class GameManager : MonoBehaviour
             if (lives <= 0)
             {
                 gameActive = false;
-                ShowFinalStats();
+                // SHOW RESULT UI WITH SCORES
+                UIManager ui = FindAnyObjectByType<UIManager>();
+                if (ui != null)
+                {
+                    PlayerPrefs.SetInt("BestScore", Mathf.Max(score, PlayerPrefs.GetInt("BestScore", 0)));
+                    ui.ShowResult(score);
+                }
+                else
+                {
+                    ShowFinalStats();  // Fallback
+                }
             }
             else
             {
@@ -143,29 +167,29 @@ public class GameManager : MonoBehaviour
         }
     }*/
 
-    void CreateNewRound()
-{
-    if (!gameActive) return;
-    
-    roundStartTime = Time.time;
-    roundsPlayed++;
-    
-    
-    RuleType rule = (RuleType)(roundsPlayed % 4);  
-    int oddIndex = UnityEngine.Random.Range(0, allTiles.Length);
-    
-    Debug.Log($"Round {roundsPlayed}: Rule = {(RuleType)rule}");  // SEE RULES
-    
-    foreach (Tile tile in allTiles)
+    public void CreateNewRound()
     {
-        tile.ResetTile();
-        bool isOdd = (tile == allTiles[oddIndex]);
-        ApplyRule(tile, rule, isOdd);
+        if (!gameActive) return;
+    
+        roundStartTime = Time.time;
+        roundsPlayed++;
+    
+    
+        RuleType rule = (RuleType)(roundsPlayed % 4);  
+        int oddIndex = UnityEngine.Random.Range(0, allTiles.Length);
+    
+        Debug.Log($"Round {roundsPlayed}: Rule = {(RuleType)rule}");  // SEE RULES
+    
+        foreach (Tile tile in allTiles)
+        {
+            tile.ResetTile();
+            bool isOdd = (tile == allTiles[oddIndex]);
+            ApplyRule(tile, rule, isOdd);
         
-        if (!isOdd)
+            if (!isOdd)
             tile.StartFade();
+        }
     }
-}
     
     void ApplyRule(Tile tile, RuleType rule, bool isOdd)
     {
@@ -186,9 +210,9 @@ public class GameManager : MonoBehaviour
                 break;
                 
             case RuleType.Size:
-                float sizeOdd = Mathf.Lerp(085f, 0.9f, (diff -1f));
+                float sizeOdd = Mathf.Lerp(0.7f, 0.9f, (diff -1f));
                 tile.transform.localScale = Vector3.one * (isOdd ? sizeOdd : 1f);
-                tile.tileImage.color = Color.yellow;
+                //tile.tileImage.color = Color.yellow;
                 break;
                 
             case RuleType.Dots:
@@ -207,7 +231,7 @@ public class GameManager : MonoBehaviour
         return 0;
     }
     
-    void UpdateUI()
+    public void UpdateUI()
     {
         scoreText.text = $"Score: {score}";
         livesText.text = $"Lives: {lives}";
